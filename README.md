@@ -1,4 +1,7 @@
 # MLDCSat
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/0832c562b7594f6b9ca45f5fcb64b088)](https://app.codacy.com/manual/arijitsh/mldcsat?utm_source=github.com&utm_medium=referral&utm_content=arijitsh/mldcsat&utm_campaign=Badge_Grade_Dashboard)
+
 MapleLCMDistChronoBTv3 from SAT Race '19 with some new heuristics implemented.
 
 # Compiling in Linux
