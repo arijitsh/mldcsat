@@ -60,7 +60,7 @@ void printStats(Solver& solver)
     printf("c backtracks            : %-12"PRIu64"   (NCB %0.f%% , CB %0.f%%)\n", solver.non_chrono_backtrack + solver.chrono_backtrack, (solver.non_chrono_backtrack * 100) / (double)(solver.non_chrono_backtrack + solver.chrono_backtrack), (solver.chrono_backtrack * 100) / (double)(solver.non_chrono_backtrack + solver.chrono_backtrack));
     printf("c decisions             : %-12"PRIu64"   (NCB %0.f%% , CB %0.f%%)\n", solver.decisions_cbt + solver.decisions_ncbt, (solver.decisions_ncbt * 100) / (double)(solver.decisions_cbt + solver.decisions_ncbt), (solver.decisions_cbt * 100) / (double)(solver.decisions_cbt + solver.decisions_ncbt));
     printf("c LSIDS vs phase saved  : %-12"PRIu64"   (same %0.f%% , opp %0.f%%)\n", solver.lsids_opp_saved + solver.lsids_same_saved, (solver.lsids_same_saved * 100) / (double)(solver.lsids_opp_saved + solver.lsids_same_saved), (solver.lsids_opp_saved * 100) / (double)(solver.lsids_opp_saved + solver.lsids_same_saved));
-    printf("c LSIDS vs phase saved  : same %-12"PRIu64", opp %-12"PRIu64"\n",  solver.lsids_same_saved, solver.lsids_opp_saved);
+    // printf("c LSIDS vs phase saved  : same %-12"PRIu64", opp %-12"PRIu64"\n",  solver.lsids_same_saved, solver.lsids_opp_saved);
     if (mem_used != 0) printf("c Memory used           : %.2f MB\n", mem_used);
     printf("c CPU time              : %g s\n", cpu_time);
 }
@@ -160,7 +160,7 @@ int main(int argc, char** argv)
             printf("c ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
         
         if (S.verbosity > 0){
-            printf("c | Git Version : %s \n",VERSION);
+            // printf("c | Git Version : %s \n",VERSION);
             printf("c ============================[ Problem Statistics ]=============================\n");
             printf("c |                                                                             |\n"); }
         
@@ -221,11 +221,11 @@ int main(int argc, char** argv)
         
         if (S.verbosity > 0){
             printStats(S);
-            if (ret == l_True) {
-                in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
-                check_solution_DIMACS(in, S);
-                gzclose(in);
-            }
+            // if (ret == l_True) {
+            //     in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
+            //     check_solution_DIMACS(in, S);
+            //     gzclose(in);
+            // }
             printf("\n"); }
         printf(ret == l_True ? "s SATISFIABLE\n" : ret == l_False ? "s UNSATISFIABLE\n" : "s UNKNOWN\n");
         if (ret == l_True && show_soln){
