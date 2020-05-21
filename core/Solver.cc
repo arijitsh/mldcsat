@@ -54,12 +54,14 @@ static DoubleOption  opt_step_size         (_cat, "step-size",   "Initial step s
 static DoubleOption  opt_step_size_dec     (_cat, "step-size-dec","Step size decrement",                          0.000001, DoubleRange(0, false, 1, false));
 static DoubleOption  opt_min_step_size     (_cat, "min-step-size","Minimal step size",                            0.06,     DoubleRange(0, false, 1, false));
 static DoubleOption  opt_var_decay         (_cat, "var-decay",   "The variable activity decay factor",            0.80,     DoubleRange(0, false, 1, false));
+static DoubleOption  opt_pol_decay         (_cat, "pol-decay",   "The polarity activity decay factor",            0.80,     DoubleRange(0, false, 1, false));
 static DoubleOption  opt_clause_decay      (_cat, "cla-decay",   "The clause activity decay factor",              0.999,    DoubleRange(0, false, 1, false));
 static DoubleOption  opt_random_var_freq   (_cat, "rnd-freq",    "The frequency with which the decision heuristic tries to choose a random variable", 0, DoubleRange(0, true, 1, true));
 static DoubleOption  opt_random_seed       (_cat, "rnd-seed",    "Used by the random variable selection",         91648253, DoubleRange(0, false, HUGE_VAL, false));
 static IntOption     opt_ccmin_mode        (_cat, "ccmin-mode",  "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange(0, 2));
 static IntOption     opt_phase_saving      (_cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange(0, 2));
 static BoolOption    opt_rnd_init_act      (_cat, "rnd-init",    "Randomize the initial activity", false);
+static BoolOption    lessActivePol      (_cat, "lessActivePol",    "Use less active polarity", false);
 static IntOption     opt_restart_first     (_cat, "rfirst",      "The base restart interval", 100, IntRange(1, INT32_MAX));
 static DoubleOption  opt_restart_inc       (_cat, "rinc",        "Restart interval increase factor", 2, DoubleRange(1, false, HUGE_VAL, false));
 static DoubleOption  opt_garbage_frac      (_cat, "gc-frac",     "The fraction of wasted memory allowed before a garbage collection is triggered",  0.20, DoubleRange(0, false, HUGE_VAL, false));
@@ -82,6 +84,7 @@ Solver::Solver() :
   , min_step_size    (opt_min_step_size)
   , timer            (5000)
   , var_decay        (opt_var_decay)
+  , pol_decay        (opt_pol_decay)
   , clause_decay     (opt_clause_decay)
   , random_var_freq  (opt_random_var_freq)
   , random_seed      (opt_random_seed)
@@ -112,6 +115,7 @@ Solver::Solver() :
   , ok                 (true)
   , cla_inc            (1)
   , var_inc            (1)
+  , pol_inc            (1)
   , watches_bin        (WatcherDeleted(ca))
   , watches            (WatcherDeleted(ca))
   , qhead              (0)
@@ -152,7 +156,7 @@ Solver::Solver() :
   , var_iLevel_inc     (1)
   , order_heap_distance(VarOrderLt(activity_distance))
 
-{}
+{printf("c lessActivePol: %s\n",lessActivePol?"true":"false");}
 
 
 Solver::~Solver()
@@ -874,6 +878,9 @@ Var Solver::newVar(bool sign, bool dvar)
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
 
+    polarity_activity.push(0);
+    polarity_activity.push(0);
+    
     activity_distance.push(0);
     var_iLevel.push(0);
     var_iLevel_tmp.push(0);
@@ -1092,7 +1099,28 @@ Lit Solver::pickBranchLit()
             next = order_heap.removeMin();
         }
 
-    return mkLit(next, polarity[next]);
+    if (lessActivePol) {
+        Lit next_lit = mkLit(next);
+        if (polarity_activity[toInt(next_lit)] == polarity_activity[toInt(~next_lit)]) {
+            return mkLit(next, polarity[next]);
+        } else if (polarity_activity[toInt(next_lit)] < polarity_activity[toInt(~next_lit)]) {
+            return next_lit;
+        } else {
+            return ~next_lit;
+        }
+    }  
+    
+    
+    Lit next_lit=mkLit(next);
+    if(polarity_activity[toInt(next_lit)] == polarity_activity[toInt(~next_lit)]){
+        return mkLit(next, polarity[next]);
+    }
+    else if(polarity_activity[toInt(next_lit)] < polarity_activity[toInt(~next_lit)]){
+        return ~next_lit;
+    }else{
+        return next_lit;
+    }
+
 }
 
 inline Solver::ConflictData Solver::FindConflictLevel(CRef cind)
@@ -1439,6 +1467,7 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from)
 #endif
     }
 
+    polBumpActivity(p);
     assigns[x] = lbool(!sign(p));
     vardata[x] = mkVarData(from, level);
     trail.push_(p);
@@ -1938,6 +1967,7 @@ lbool Solver::search(int& nof_conflicts)
             }
 
             if (VSIDS) varDecayActivity();
+            polDecayActivity();
             claDecayActivity();
 
             /*if (--learntsize_adjust_cnt == 0){
