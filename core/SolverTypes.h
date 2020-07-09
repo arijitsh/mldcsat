@@ -80,6 +80,10 @@ inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
 const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
 
+
+inline int toFormal(Lit p) { return sign(p) ? -var(p) - 1 : var(p) + 1; }
+
+
 inline std::ostream& operator<<(std::ostream& out, const Lit& val) 
 {
     out << (sign(val) ? -var(val) : var(val)) << std::flush;

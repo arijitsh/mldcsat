@@ -49,7 +49,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Alg.h"
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
-
+#include "utils/ccnr.h"
 
 // duplicate learnts version
 #include <chrono>
@@ -204,7 +204,7 @@ public:
 
 
     // duplicate learnts version
-    uint64_t       VSIDS_props_limit;
+    
     uint32_t       min_number_of_learnts_copies;    
     uint32_t       dupl_db_init_size;
     uint32_t       max_lbd_dup;
@@ -312,7 +312,7 @@ protected:
     
     // duplicate learnts version    
     std::map<int32_t,std::map<uint32_t,std::unordered_map<uint64_t,uint32_t>>>  ht;
-    uint32_t     reduceduplicates         ();         // Reduce the duplicates DB
+  
     // duplicate learnts version
 
     int 				confl_to_chrono;
@@ -501,6 +501,51 @@ public:
     vec<Lit> involved_lits;
     double    my_var_decay;
     bool   DISTANCE;
+
+private:
+    //  to avoid the init_soln of two LS too near.  
+    int     restarts_gap        = 300;
+    //  if trail.size() over c*nVars or p*max_trail, call ls.
+    float   conflict_ratio      = 0.4;
+    float   percent_ratio       = 0.9;
+    //  control ls time total use.
+    float   up_time_ratio       = 0.2;
+    //  control ls memory use per call.
+    long long ls_mems_num       = 50*1000*1000;
+    //  control the rephase rate based on restarts;
+    // int     rephase_mod         = 10000;
+    //  the LS used in the first # seconds is to initialize a good ls_best_soln,
+    //  after # seconds, the
+    // int     state_change_time   = 100;//seconds
+    int     state_change_time   = 2000;//starts
+    //  whether the mediation_soln is used as rephase, if not 
+    bool    mediation_used      = false;
+    
+    int     switch_heristic_mod = 500;//starts
+    int     last_switch_conflicts;
+
+    //informations 
+    CCNR::ls_solver ccnr;
+    int     freeze_ls_restart_num   = 0;
+    double  ls_used_time            = 0;
+    int     ls_call_num             = 0;
+    int     ls_best_unsat_num       = INT_MAX;
+    bool    solved_by_ls            = false;
+    int     max_trail               = 0;
+    
+
+    //Phases
+    // save the recent ls soln and best ls soln, need to call ls once.
+    std::vector<char> ls_mediation_soln; 
+    // with the minimum unsat clauses num in LS.
+    std::vector<char> ls_best_soln;
+    // hold the soln with the best trail size.
+    std::vector<char> top_trail_soln;
+
+    //functions 
+    bool    call_ls(bool use_up_build);
+    void    rand_based_rephase();
+    void    info_based_rephase();
 };
 
 
